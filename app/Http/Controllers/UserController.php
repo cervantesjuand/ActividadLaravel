@@ -10,7 +10,6 @@ class UserController extends Controller
     public function index()
     {
         
-
     }
 
     /**
@@ -18,20 +17,68 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request, [
-            'name' => 'required | max:30',
-            'lastname' => 'required | max:30',
-            'email' => 'required | unique:users|email|max:60',
-            'role' => 'required | max:20',
-            'password' => 'required | confirmed|min:6'
+        try {
+            $this->validate($request, [
+                'name' => 'required | max:30',
+                'lastname' => 'required | max:30',
+                'email' => 'required | unique:users|email|max:60',
+                'role' => 'required | max:20',
+                'password' => 'required | min:6'
+            ]);
+    
+            $user = User::create([
+                'name' => $request->name,
+                'lastname' => $request->lastname,
+                'email' => $request->email,
+                'role' => $request->role,
+                'password' => bcrypt($request->password)
+            ]);
+    
+            return redirect()->route('login') ;
+        } catch (\Exception $e) {
+             echo $e;
+        }
+    }
+
+    public function storeView() {
+
+        return view('auth.register');
+        
+    }
+
+    public function loginView() {
+
+        return view('auth.login');
+
+    }
+
+
+    public function dashboardView(User $user) {
+
+        return view('dashboard',[
+            'user' => $user
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'apellidos' => $request->apellidos,
-            'email' => $request->email,
-            'role' => $request->rol,
-            'password' => bcrypt($request->password)
+    }
+
+    public function login(Request $request){
+        try {
+        $this->validate($request, [
+            'email' =>'required|email',
+            'password' =>'required'
         ]);
+
+        if (!auth()->attempt($request->only('email', 'password'), $request->remember)) {
+            return back()->with('mensaje','Crendenciales incorrectas');
+        }
+
+        if(auth()->user()->role === "Administrador"){
+            return redirect()->route('dashboard', auth()->user()) ;
+        }else{
+            return redirect()->route('hola');
+        }
+    }catch (\Exception $e){
+        dd($e);
+    }
     }
 }
